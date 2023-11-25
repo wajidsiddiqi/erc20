@@ -1,34 +1,42 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Lock {
-    uint public unlockTime;
-    address payable public owner;
+contract MyToken is ERC20, Ownable {
+    //* State Variables
+    uint256 private constant MAX_SUPPLY = 1000000 * 10 ** 18;
+    uint256 private constant MAX_HOLDING = 10000;
 
-    event Withdrawal(uint amount, uint when);
+    constructor(
+        address initialOwner
+    ) ERC20("MyToken", "MTK") Ownable(initialOwner) {}
 
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-
-        unlockTime = _unlockTime;
-        owner = payable(msg.sender);
+    function mint(uint256 amount) public {
+        if (totalSupply() == MAX_SUPPLY) revert MyToken__ReachedMaxSupply();
+        if (balanceOf(msg.sender) + amount > MAX_HOLDING)
+            revert MyToken__ExceedingMaxHolding();
+        _mint(msg.sender, amount);
     }
 
-    function withdraw() public {
-        // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
-        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+    function transfer(
+        address to,
+        uint256 value
+    ) public virtual override returns (bool) {
+        if (balanceOf(to) + value > MAX_HOLDING)
+            revert MyToken__ExceedingMaxHolding();
+        address owner = _msgSender();
+        _transfer(owner, to, value);
+        return true;
+    }
 
-        require(block.timestamp >= unlockTime, "You can't withdraw yet");
-        require(msg.sender == owner, "You aren't the owner");
+    //*Getter Functions
+    function getMaxSupply() public pure returns (uint256) {
+        return MAX_SUPPLY;
+    }
 
-        emit Withdrawal(address(this).balance, block.timestamp);
-
-        owner.transfer(address(this).balance);
+    function getMaxHolding() public pure returns (uint256) {
+        return MAX_HOLDING;
     }
 }
