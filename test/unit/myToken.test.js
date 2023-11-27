@@ -47,12 +47,24 @@ const { assert, expect } = require("chai");
 
         it("reverts if exceeds the max supply", async () => {
           accounts = await ethers.getSigners();
-          for (let i = 0; i < 101; i++) {
+          for (let i = 0; i < 100; i++) {
             await myToken.connect(accounts[i]).mint(BigInt(10000));
           }
+
           await expect(
-            myToken.connect(accounts[105]).mint(BigInt(10000))
+            myToken.connect(accounts[109]).mint(BigInt(10000))
           ).to.be.revertedWithCustomError(myToken, "MyToken__ReachedMaxSupply");
+        });
+
+        it("successfully mints and updates", async () => {
+          accounts = await ethers.getSigners();
+
+          await myToken.connect(accounts[2]).mint(BigInt(5000));
+          const userBalance = await myToken.balanceOf(accounts[2].address);
+          const totalSupply = await myToken.totalSupply();
+
+          assert.equal(userBalance, BigInt(5000));
+          assert.equal(totalSupply, BigInt(5000));
         });
       });
     });
