@@ -17,7 +17,8 @@ contract MyToken is ERC20, Ownable {
     ) ERC20("MyToken", "MTK") Ownable(initialOwner) {}
 
     function mint(uint256 amount) public {
-        if (totalSupply() == MAX_SUPPLY) revert MyToken__ReachedMaxSupply();
+        if ((totalSupply() + amount) * 10 ** 18 > MAX_SUPPLY)
+            revert MyToken__ReachedMaxSupply();
         if (balanceOf(msg.sender) + amount > MAX_HOLDING)
             revert MyToken__ExceedingMaxHolding();
         _mint(msg.sender, amount);
