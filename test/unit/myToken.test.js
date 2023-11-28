@@ -67,4 +67,51 @@ const { assert, expect } = require("chai");
           assert.equal(totalSupply, BigInt(5000));
         });
       });
+
+      describe("Transfer Function", () => {
+        it("reverts if exceeds the max holding", async () => {
+          accounts = await ethers.getSigners();
+          await expect(
+            myToken
+              .connect(accounts[1])
+              .transfer(accounts[2].address, BigInt(12000))
+          ).to.be.revertedWithCustomError(
+            myToken,
+            "MyToken__ExceedingMaxHolding"
+          );
+        });
+
+        it("reverts if exceeds the max holding v2", async () => {
+          accounts = await ethers.getSigners();
+
+          await myToken.connect(accounts[2]).mint(BigInt(8000));
+          await myToken.connect(accounts[1]).mint(BigInt(5000));
+
+          await expect(
+            myToken
+              .connect(accounts[1])
+              .transfer(accounts[2].address, BigInt(4000))
+          ).to.be.revertedWithCustomError(
+            myToken,
+            "MyToken__ExceedingMaxHolding"
+          );
+        });
+
+        it("successfully transfers", async () => {
+          accounts = await ethers.getSigners();
+
+          await myToken.connect(accounts[2]).mint(BigInt(8000));
+          await myToken.connect(accounts[1]).mint(BigInt(5000));
+
+          await myToken
+            .connect(accounts[1])
+            .transfer(accounts[2].address, BigInt(1000));
+
+          const fromBalance = await myToken.balanceOf(accounts[1].address);
+          const toBalance = await myToken.balanceOf(accounts[2].address);
+
+          assert.equal(fromBalance, BigInt(4000));
+          assert.equal(toBalance, BigInt(9000));
+        });
+      });
     });
